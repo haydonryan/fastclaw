@@ -5,7 +5,7 @@ mod health;
 use clap::{Parser, Subcommand};
 use gateway_lifecycle::{GatewayRestartOpts, run_gateway_restart};
 use gateway_status::{GatewayStatusOpts, run_gateway_status};
-use health::HealthOpts;
+use health::{HealthOpts, run_health};
 use std::env;
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
@@ -85,6 +85,11 @@ fn main() -> ExitCode {
         })) = &cli.command
     {
         return ExitCode::from(run_gateway_restart(opts) as u8);
+    }
+    if !cli.passthrough
+        && let Some(TopCommand::Health(opts)) = &cli.command
+    {
+        return ExitCode::from(run_health(opts) as u8);
     }
     let passthrough = reconstruct_passthrough_args(cli.command);
     passthrough_args(&passthrough)

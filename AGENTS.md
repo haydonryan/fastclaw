@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Mission
-Build a replacement OpenClaw CLI in Rust (`openclaw-rs`) using `clap`, progressively migrating commands from the existing Node CLI.
+Build `fastclaw`, a replacement OpenClaw CLI in Rust using `clap`, progressively migrating commands from the existing Node CLI.
 
 ## Non-Negotiable Rules
 1. For every new addition, add a validation test in the same change.

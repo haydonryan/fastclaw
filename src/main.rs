@@ -1,6 +1,8 @@
+mod gateway_lifecycle;
 mod gateway_status;
 
 use clap::{Parser, Subcommand};
+use gateway_lifecycle::{GatewayRestartOpts, run_gateway_restart};
 use gateway_status::{GatewayStatusOpts, run_gateway_status};
 use std::env;
 #[cfg(unix)]
@@ -11,8 +13,8 @@ const OPENCLAW_BIN: &str = "/usr/bin/openclaw";
 
 #[derive(Debug, Parser)]
 #[command(
-    name = "openclaw",
-    about = "OpenClaw CLI passthrough (Rust replacement)",
+    name = "fastclaw",
+    about = "FastClaw CLI (Rust replacement for OpenClaw)",
     disable_help_subcommand = true
 )]
 struct Cli {
@@ -42,6 +44,8 @@ struct GatewayCommand {
 enum GatewaySubcommand {
     /// Show gateway service status + probe the Gateway.
     Status(GatewayStatusOpts),
+    /// Restart the Gateway service (launchd/systemd/schtasks).
+    Restart(GatewayRestartOpts),
     #[command(external_subcommand)]
     External(Vec<String>),
 }
@@ -71,6 +75,13 @@ fn main() -> ExitCode {
     {
         return ExitCode::from(run_gateway_status(opts) as u8);
     }
+    if !cli.passthrough
+        && let Some(TopCommand::Gateway(GatewayCommand {
+            command: Some(GatewaySubcommand::Restart(opts)),
+        })) = &cli.command
+    {
+        return ExitCode::from(run_gateway_restart(opts) as u8);
+    }
 
     let passthrough = reconstruct_passthrough_args(cli.command);
     passthrough_args(&passthrough)
@@ -81,6 +92,7 @@ fn reconstruct_passthrough_args(command: Option<TopCommand>) -> Vec<String> {
         Some(TopCommand::External(args)) => args,
         Some(TopCommand::Gateway(gw)) => match gw.command {
             Some(GatewaySubcommand::Status(opts)) => gateway_status_to_args(opts),
+            Some(GatewaySubcommand::Restart(opts)) => gateway_restart_to_args(opts),
             Some(GatewaySubcommand::External(args)) => {
                 let mut out = vec!["gateway".to_string()];
                 out.extend(args);
@@ -116,6 +128,14 @@ fn gateway_status_to_args(opts: GatewayStatusOpts) -> Vec<String> {
     if opts.deep {
         out.push("--deep".to_string());
     }
+    if opts.json {
+        out.push("--json".to_string());
+    }
+    out
+}
+
+fn gateway_restart_to_args(opts: GatewayRestartOpts) -> Vec<String> {
+    let mut out = vec!["gateway".to_string(), "restart".to_string()];
     if opts.json {
         out.push("--json".to_string());
     }

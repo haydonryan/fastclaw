@@ -1,17 +1,19 @@
-# OpenClaw Rust CLI Migration Tracker
+# FastClaw Migration Tracker
 
-This repository is building a Rust replacement CLI (`openclaw`) that will progressively migrate command implementations from the Node CLI.
+This project is building `fastclaw`, a Rust replacement frontend for the OpenClaw CLI, using `clap` with incremental command migration from the Node implementation.
 
-Migration status legend:
+## Status Legend
 - `Native Rust`: Implemented directly in Rust.
-- `Passthrough`: Executed by delegating to `/usr/bin/openclaw`.
-- `Planned`: Not yet wired in the Rust CLI.
+- `Passthrough`: Delegates execution to `/usr/bin/openclaw`.
 
-Current state:
-- The Rust CLI currently delegates commands to `/usr/bin/openclaw`.
-- `openclaw gateway status` is implemented natively in Rust (Linux/systemd-focused clone).
+## Current State
+- Global passthrough override is supported via `-p` / `--passthrough`.
+- Migrated command paths:
+  - `openclaw gateway status`
+  - `openclaw gateway restart`
+- All other commands currently run through passthrough.
 
-## Commands
+## Command Migration Table
 
 | Command | Description | Migration Status |
 |---|---|---|
@@ -36,6 +38,7 @@ Current state:
 | `doctor` | Health checks + quick fixes for gateway and channels | Passthrough |
 | `gateway` | Run, inspect, and query the WebSocket Gateway | Passthrough |
 | `gateway status` | Show gateway runtime and probe status | Native Rust |
+| `gateway restart` | Restart the gateway service | Native Rust |
 | `health` | Fetch health from the running gateway | Passthrough |
 | `help` | Display help for command | Passthrough |
 | `hooks` | Manage internal agent hooks | Passthrough |
@@ -63,6 +66,12 @@ Current state:
 | `update` | Update OpenClaw and inspect update channel status | Passthrough |
 | `webhooks` | Webhook helpers and integrations | Passthrough |
 
-## Source
+## Why This Migration
+Primary goal: reduce CLI startup and command latency.
 
+Observed local example (`gateway status`):
+- Rust CLI: about `0.016s` wall time
+- Node CLI: about `8.273s` wall time
+
+## Source
 Command list captured from `/usr/bin/openclaw --help` on 2026-03-13.

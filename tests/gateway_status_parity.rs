@@ -10,7 +10,7 @@ fn gateway_status_matches_openclaw_output_except_header() {
         return;
     }
 
-    let rust_bin = env!("CARGO_BIN_EXE_openclaw");
+    let rust_bin = env!("CARGO_BIN_EXE_fastclaw");
 
     let rust_output = Command::new(rust_bin)
         .args(["gateway", "status"])

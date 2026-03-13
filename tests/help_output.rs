@@ -25,6 +25,7 @@ fn root_help_lists_passthrough_and_gateway_status() {
         stdout.contains("gateway"),
         "missing gateway command in help"
     );
+    assert!(stdout.contains("health"), "missing health command in help");
 }
 
 #[test]

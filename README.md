@@ -11,6 +11,7 @@
 - Native paths today:
   - `gateway status`
   - `gateway restart`
+  - `health`
 - All other command paths currently delegate to `/usr/bin/openclaw`.
 
 ## Command Matrix
@@ -37,7 +38,7 @@
 | `docs` | `none` | Search the live OpenClaw docs | Passthrough |
 | `doctor` | `none` | Health checks + quick fixes for gateway and channels | Passthrough |
 | `gateway` | `run`, `call`, `usage-cost`, `health`, `probe`, `discover`, `status`, `install`, `uninstall`, `start`, `stop`, `restart` | Run, inspect, and query the WebSocket Gateway | Partial (status/restart native; others passthrough) |
-| `health` | `none` | Fetch health from the running gateway | Passthrough |
+| `health` | `none` | Fetch health from the running gateway | Native Rust |
 | `help` | `none` | Display help for command | Passthrough |
 | `hooks` | `check`, `disable`, `enable`, `info`, `install`, `list`, `update` | Manage internal agent hooks | Passthrough |
 | `logs` | `none` | Tail gateway file logs via RPC | Passthrough |

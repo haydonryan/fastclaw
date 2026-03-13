@@ -286,14 +286,15 @@ pub fn run_gateway_status(opts: &GatewayStatusOpts) -> i32 {
         println!();
     }
 
-    if opts.probe && matches!(rpc_ok, Some(true)) {
-        if let Some((host, port)) = parse_ws_host_port(&probe_target) {
-            println!(
-                "{} {}",
-                style.label("Listening:"),
-                style.info(format!("{host}:{port}"))
-            );
-        }
+    if opts.probe
+        && matches!(rpc_ok, Some(true))
+        && let Some((host, port)) = parse_ws_host_port(&probe_target)
+    {
+        println!(
+            "{} {}",
+            style.label("Listening:"),
+            style.info(format!("{host}:{port}"))
+        );
     }
 
     println!(
@@ -464,10 +465,10 @@ fn strip_quotes(s: &str) -> String {
 fn parse_port_from_exec_start(exec_start: &str) -> Option<u16> {
     let parts: Vec<&str> = exec_start.split_whitespace().collect();
     for window in parts.windows(2) {
-        if window[0] == "--port" {
-            if let Ok(port) = window[1].parse::<u16>() {
-                return Some(port);
-            }
+        if window[0] == "--port"
+            && let Ok(port) = window[1].parse::<u16>()
+        {
+            return Some(port);
         }
     }
     None
@@ -570,10 +571,10 @@ fn parse_ws_host_port(url: &str) -> Option<(String, u16)> {
         return None;
     };
     let authority = rest.split('/').next()?;
-    if let Some((host, port_str)) = authority.rsplit_once(':') {
-        if let Ok(port) = port_str.parse::<u16>() {
-            return Some((host.to_string(), port));
-        }
+    if let Some((host, port_str)) = authority.rsplit_once(':')
+        && let Ok(port) = port_str.parse::<u16>()
+    {
+        return Some((host.to_string(), port));
     }
     None
 }

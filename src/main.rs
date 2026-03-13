@@ -1,9 +1,11 @@
 mod gateway_lifecycle;
 mod gateway_status;
+mod health;
 
 use clap::{Parser, Subcommand};
 use gateway_lifecycle::{GatewayRestartOpts, run_gateway_restart};
 use gateway_status::{GatewayStatusOpts, run_gateway_status};
+use health::{HealthOpts, run_health};
 use std::env;
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
@@ -30,6 +32,8 @@ struct Cli {
 enum TopCommand {
     /// Run, inspect, and query the WebSocket Gateway.
     Gateway(GatewayCommand),
+    /// Fetch health from the running gateway.
+    Health(HealthOpts),
     #[command(external_subcommand)]
     External(Vec<String>),
 }
@@ -82,6 +86,11 @@ fn main() -> ExitCode {
     {
         return ExitCode::from(run_gateway_restart(opts) as u8);
     }
+    if !cli.passthrough
+        && let Some(TopCommand::Health(opts)) = &cli.command
+    {
+        return ExitCode::from(run_health(opts) as u8);
+    }
 
     let passthrough = reconstruct_passthrough_args(cli.command);
     passthrough_args(&passthrough)
@@ -90,6 +99,7 @@ fn main() -> ExitCode {
 fn reconstruct_passthrough_args(command: Option<TopCommand>) -> Vec<String> {
     match command {
         Some(TopCommand::External(args)) => args,
+        Some(TopCommand::Health(opts)) => health_to_args(opts),
         Some(TopCommand::Gateway(gw)) => match gw.command {
             Some(GatewaySubcommand::Status(opts)) => gateway_status_to_args(opts),
             Some(GatewaySubcommand::Restart(opts)) => gateway_restart_to_args(opts),
@@ -102,6 +112,24 @@ fn reconstruct_passthrough_args(command: Option<TopCommand>) -> Vec<String> {
         },
         None => Vec::new(),
     }
+}
+
+fn health_to_args(opts: HealthOpts) -> Vec<String> {
+    let mut out = vec!["health".to_string()];
+    if opts.json {
+        out.push("--json".to_string());
+    }
+    if opts.timeout != 10_000 {
+        out.push("--timeout".to_string());
+        out.push(opts.timeout.to_string());
+    }
+    if opts.verbose {
+        out.push("--verbose".to_string());
+    }
+    if opts.debug {
+        out.push("--debug".to_string());
+    }
+    out
 }
 
 fn gateway_status_to_args(opts: GatewayStatusOpts) -> Vec<String> {

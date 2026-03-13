@@ -1,0 +1,48 @@
+use std::process::Command;
+
+#[test]
+fn root_help_lists_passthrough_and_gateway_status() {
+    let bin = env!("CARGO_BIN_EXE_openclaw");
+    let output = Command::new(bin)
+        .arg("--help")
+        .output()
+        .expect("failed to run --help");
+
+    assert!(
+        output.status.success(),
+        "help failed (code: {:?})\nstdout:\n{}\nstderr:\n{}",
+        output.status.code(),
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("--passthrough"),
+        "missing --passthrough in help"
+    );
+    assert!(
+        stdout.contains("gateway"),
+        "missing gateway command in help"
+    );
+}
+
+#[test]
+fn gateway_help_lists_status_subcommand() {
+    let bin = env!("CARGO_BIN_EXE_openclaw");
+    let output = Command::new(bin)
+        .args(["gateway", "--help"])
+        .output()
+        .expect("failed to run gateway --help");
+
+    assert!(
+        output.status.success(),
+        "gateway help failed (code: {:?})\nstdout:\n{}\nstderr:\n{}",
+        output.status.code(),
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("status"), "missing status in gateway help");
+}

@@ -1,7 +1,8 @@
 mod gateway_status;
 
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use gateway_status::{GatewayStatusOpts, run_gateway_status};
+use std::env;
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
 use std::process::{Command, ExitCode, Stdio};
@@ -19,22 +20,111 @@ struct Cli {
     #[arg(short = 'p', long = "passthrough", global = true)]
     passthrough: bool,
 
-    /// Arguments to pass through to the system OpenClaw CLI.
-    #[arg(value_name = "ARGS", num_args = 0.., trailing_var_arg = true, allow_hyphen_values = true)]
-    args: Vec<String>,
+    #[command(subcommand)]
+    command: Option<TopCommand>,
+}
+
+#[derive(Debug, Subcommand)]
+enum TopCommand {
+    /// Run, inspect, and query the WebSocket Gateway.
+    Gateway(GatewayCommand),
+    #[command(external_subcommand)]
+    External(Vec<String>),
+}
+
+#[derive(Debug, Parser)]
+struct GatewayCommand {
+    #[command(subcommand)]
+    command: Option<GatewaySubcommand>,
+}
+
+#[derive(Debug, Subcommand)]
+enum GatewaySubcommand {
+    /// Show gateway service status + probe the Gateway.
+    Status(GatewayStatusOpts),
+    #[command(external_subcommand)]
+    External(Vec<String>),
 }
 
 fn main() -> ExitCode {
-    let cli = Cli::parse();
+    let raw_args: Vec<String> = env::args().collect();
+    let cli = match Cli::try_parse_from(&raw_args) {
+        Ok(cli) => cli,
+        Err(err) => {
+            use clap::error::ErrorKind;
+            match err.kind() {
+                ErrorKind::DisplayHelp | ErrorKind::DisplayVersion => {
+                    let _ = err.print();
+                    return ExitCode::SUCCESS;
+                }
+                _ => {
+                    return passthrough_args(&raw_args[1..]);
+                }
+            }
+        }
+    };
 
     if !cli.passthrough
-        && let Some(status_opts) = parse_gateway_status_args(&cli.args)
+        && let Some(TopCommand::Gateway(GatewayCommand {
+            command: Some(GatewaySubcommand::Status(opts)),
+        })) = &cli.command
     {
-        return ExitCode::from(run_gateway_status(&status_opts) as u8);
+        return ExitCode::from(run_gateway_status(opts) as u8);
     }
 
+    let passthrough = reconstruct_passthrough_args(cli.command);
+    passthrough_args(&passthrough)
+}
+
+fn reconstruct_passthrough_args(command: Option<TopCommand>) -> Vec<String> {
+    match command {
+        Some(TopCommand::External(args)) => args,
+        Some(TopCommand::Gateway(gw)) => match gw.command {
+            Some(GatewaySubcommand::Status(opts)) => gateway_status_to_args(opts),
+            Some(GatewaySubcommand::External(args)) => {
+                let mut out = vec!["gateway".to_string()];
+                out.extend(args);
+                out
+            }
+            None => vec!["gateway".to_string()],
+        },
+        None => Vec::new(),
+    }
+}
+
+fn gateway_status_to_args(opts: GatewayStatusOpts) -> Vec<String> {
+    let mut out = vec!["gateway".to_string(), "status".to_string()];
+    if let Some(url) = opts.url {
+        out.push("--url".to_string());
+        out.push(url);
+    }
+    if let Some(token) = opts.token {
+        out.push("--token".to_string());
+        out.push(token);
+    }
+    if let Some(password) = opts.password {
+        out.push("--password".to_string());
+        out.push(password);
+    }
+    if opts.timeout != 10_000 {
+        out.push("--timeout".to_string());
+        out.push(opts.timeout.to_string());
+    }
+    if !opts.probe {
+        out.push("--no-probe".to_string());
+    }
+    if opts.deep {
+        out.push("--deep".to_string());
+    }
+    if opts.json {
+        out.push("--json".to_string());
+    }
+    out
+}
+
+fn passthrough_args(args: &[String]) -> ExitCode {
     let status = match Command::new(OPENCLAW_BIN)
-        .args(&cli.args)
+        .args(args)
         .stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
@@ -59,16 +149,4 @@ fn main() -> ExitCode {
     }
 
     ExitCode::from(1)
-}
-
-fn parse_gateway_status_args(args: &[String]) -> Option<GatewayStatusOpts> {
-    if args.len() < 2 || args.first()? != "gateway" || args.get(1)? != "status" {
-        return None;
-    }
-
-    let parse_input = std::iter::once(String::from("gateway-status"))
-        .chain(args.iter().skip(2).cloned())
-        .collect::<Vec<String>>();
-
-    GatewayStatusOpts::try_parse_from(parse_input).ok()
 }

@@ -8,6 +8,7 @@ Build `fastclaw`, a replacement OpenClaw CLI in Rust using `clap`, progressively
 2. After every task, run `cargo fmt`.
 3. Preserve command behavior parity with `/usr/bin/openclaw` unless a migration explicitly changes behavior.
 4. Keep `--passthrough` / `-p` working so users can force delegation to `/usr/bin/openclaw`.
+5. Never simplify delegated output. For delegated commands, stdout/stderr and exit behavior must match `/usr/bin/openclaw` exactly.
 
 ## Migration Policy
 1. Migrate one command path at a time.

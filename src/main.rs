@@ -1,4 +1,7 @@
+mod gateway_status;
+
 use clap::Parser;
+use gateway_status::{GatewayStatusOpts, run_gateway_status};
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
 use std::process::{Command, ExitCode, Stdio};
@@ -23,7 +26,12 @@ struct Cli {
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
-    let _force_passthrough = cli.passthrough;
+
+    if !cli.passthrough
+        && let Some(status_opts) = parse_gateway_status_args(&cli.args)
+    {
+        return ExitCode::from(run_gateway_status(&status_opts) as u8);
+    }
 
     let status = match Command::new(OPENCLAW_BIN)
         .args(&cli.args)
@@ -51,4 +59,16 @@ fn main() -> ExitCode {
     }
 
     ExitCode::from(1)
+}
+
+fn parse_gateway_status_args(args: &[String]) -> Option<GatewayStatusOpts> {
+    if args.len() < 2 || args.first()? != "gateway" || args.get(1)? != "status" {
+        return None;
+    }
+
+    let parse_input = std::iter::once(String::from("gateway-status"))
+        .chain(args.iter().skip(2).cloned())
+        .collect::<Vec<String>>();
+
+    GatewayStatusOpts::try_parse_from(parse_input).ok()
 }

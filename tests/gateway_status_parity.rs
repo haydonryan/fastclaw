@@ -1,3 +1,5 @@
+mod support;
+
 use std::path::Path;
 use std::process::Command;
 
@@ -10,13 +12,13 @@ fn gateway_status_matches_openclaw_output_except_header() {
         return;
     }
 
-    let rust_bin = env!("CARGO_BIN_EXE_fastclaw");
+    let rust_bin = support::fastclaw_bin();
 
     let rust_output = Command::new(rust_bin)
         .args(["gateway", "status"])
         .env("NO_COLOR", "1")
         .output()
-        .expect("failed to run rust openclaw gateway status");
+        .expect("failed to run fastclaw gateway status");
     assert!(
         rust_output.status.success(),
         "rust gateway status failed (code: {:?})\nstdout:\n{}\nstderr:\n{}",

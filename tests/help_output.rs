@@ -1,8 +1,10 @@
+mod support;
+
 use std::process::Command;
 
 #[test]
 fn root_help_lists_passthrough_and_gateway_status() {
-    let bin = env!("CARGO_BIN_EXE_fastclaw");
+    let bin = support::fastclaw_bin();
     let output = Command::new(bin)
         .arg("--help")
         .output()
@@ -30,7 +32,7 @@ fn root_help_lists_passthrough_and_gateway_status() {
 
 #[test]
 fn gateway_help_lists_status_subcommand() {
-    let bin = env!("CARGO_BIN_EXE_fastclaw");
+    let bin = support::fastclaw_bin();
     let output = Command::new(bin)
         .args(["gateway", "--help"])
         .output()
@@ -46,6 +48,7 @@ fn gateway_help_lists_status_subcommand() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("status"), "missing status in gateway help");
+    assert!(stdout.contains("health"), "missing health in gateway help");
     assert!(
         stdout.contains("restart"),
         "missing restart in gateway help"

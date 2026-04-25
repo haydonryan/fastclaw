@@ -1,3 +1,5 @@
+mod support;
+
 use std::fs;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
@@ -11,7 +13,7 @@ fn gateway_restart_calls_systemctl_user_restart() {
         return;
     }
 
-    let bin = env!("CARGO_BIN_EXE_fastclaw");
+    let bin = support::fastclaw_bin();
     let sandbox = mktemp_dir("gateway-restart-test");
     let fake_bin_dir = sandbox.join("bin");
     let fake_home = sandbox.join("home");

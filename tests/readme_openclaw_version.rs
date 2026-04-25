@@ -1,3 +1,5 @@
+mod support;
+
 use std::fs;
 use std::path::Path;
 use std::process::Command;
@@ -21,12 +23,16 @@ fn readme_contains_openclaw_baseline_version_from_help() {
     let cleaned = strip_ansi(&combined);
     let version = extract_openclaw_version(&cleaned).expect("failed to parse OpenClaw version");
 
-    let readme_path = concat!(env!("CARGO_MANIFEST_DIR"), "/README.md");
+    let readme_path = support::crate_root().join("README.md");
     let readme = fs::read_to_string(readme_path).expect("failed to read README.md");
 
     assert!(
         readme.contains("# FastClaw"),
         "README title is not FastClaw"
+    );
+    assert!(
+        readme.contains("Rust Time (real s)") && readme.contains("Node Time (real s)"),
+        "README is missing timing columns"
     );
     assert!(
         readme.contains(&version),

@@ -1,8 +1,10 @@
+mod gateway_health;
 mod gateway_lifecycle;
 mod gateway_status;
 mod health;
 
 use clap::{Parser, Subcommand};
+use gateway_health::{GatewayHealthOpts, run_gateway_health};
 use gateway_lifecycle::{GatewayRestartOpts, run_gateway_restart};
 use gateway_status::{GatewayStatusOpts, run_gateway_status};
 use health::{HealthOpts, run_health};
@@ -48,6 +50,8 @@ struct GatewayCommand {
 enum GatewaySubcommand {
     /// Show gateway service status + probe the Gateway.
     Status(GatewayStatusOpts),
+    /// Fetch Gateway health.
+    Health(GatewayHealthOpts),
     /// Restart the Gateway service (launchd/systemd/schtasks).
     Restart(GatewayRestartOpts),
     #[command(external_subcommand)]
@@ -87,6 +91,13 @@ fn main() -> ExitCode {
         return ExitCode::from(run_gateway_restart(opts) as u8);
     }
     if !cli.passthrough
+        && let Some(TopCommand::Gateway(GatewayCommand {
+            command: Some(GatewaySubcommand::Health(opts)),
+        })) = &cli.command
+    {
+        return ExitCode::from(run_gateway_health(opts) as u8);
+    }
+    if !cli.passthrough
         && let Some(TopCommand::Health(opts)) = &cli.command
     {
         return ExitCode::from(run_health(opts) as u8);
@@ -101,6 +112,7 @@ fn reconstruct_passthrough_args(command: Option<TopCommand>) -> Vec<String> {
         Some(TopCommand::Health(opts)) => health_to_args(opts),
         Some(TopCommand::Gateway(gw)) => match gw.command {
             Some(GatewaySubcommand::Status(opts)) => gateway_status_to_args(opts),
+            Some(GatewaySubcommand::Health(opts)) => gateway_health_to_args(opts),
             Some(GatewaySubcommand::Restart(opts)) => gateway_restart_to_args(opts),
             Some(GatewaySubcommand::External(args)) => {
                 let mut out = vec!["gateway".to_string()];
@@ -154,6 +166,30 @@ fn gateway_status_to_args(opts: GatewayStatusOpts) -> Vec<String> {
     }
     if opts.deep {
         out.push("--deep".to_string());
+    }
+    if opts.json {
+        out.push("--json".to_string());
+    }
+    out
+}
+
+fn gateway_health_to_args(opts: GatewayHealthOpts) -> Vec<String> {
+    let mut out = vec!["gateway".to_string(), "health".to_string()];
+    if let Some(url) = opts.url {
+        out.push("--url".to_string());
+        out.push(url);
+    }
+    if let Some(token) = opts.token {
+        out.push("--token".to_string());
+        out.push(token);
+    }
+    if let Some(password) = opts.password {
+        out.push("--password".to_string());
+        out.push(password);
+    }
+    if opts.timeout != 10_000 {
+        out.push("--timeout".to_string());
+        out.push(opts.timeout.to_string());
     }
     if opts.json {
         out.push("--json".to_string());

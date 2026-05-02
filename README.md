@@ -1,6 +1,6 @@
 # FastClaw
 
-> Warning: this project is highly experimental and command behavior may change as the Rust implementation expands.
+> Warning: this project is highly experimental and command behavior may change as the Rust implementation expands. DEPROCATED!
 
 `fastclaw` is a replacement frontend for OpenClaw written in Rust, migrating command paths incrementally while preserving behavior.
 
